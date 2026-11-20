@@ -1,9 +1,29 @@
 # 🔍 LabelLens — 100% Offline On-Device Food & Cosmetic Safety Scanner
 
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20APK-brightgreen.svg?style=for-the-badge&logo=android)](https://github.com/saharanit196/LabelLens/releases)
-[![Architecture](https://img.shields.io/badge/Architecture-Zero--Backend%20%7C%20100%25%20Offline-blue.svg?style=for-the-badge)](https://github.com/saharanit196/LabelLens)
-[![Framework](https://img.shields.io/badge/React%20Native-Expo%20SDK%2057-black.svg?style=for-the-badge&logo=react)](https://expo.dev)
-[![License](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](LICENSE)
+<p align="center">
+  <img src="./assets/icon.png" width="140" height="140" alt="LabelLens Icon" style="border-radius: 28px;" />
+</p>
+
+<p align="center">
+  <b>100% Offline, Privacy-First Edge AI Ingredient Safety, Additive & Allergen Scanner</b>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Ranit2op/LabelLens/releases/download/v1.0.0/LabelLens-v1.0.0.apk">
+    <img src="https://img.shields.io/badge/Download-Android_APK_(v1.0.0)-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download Android APK" />
+  </a>
+  <a href="https://github.com/Ranit2op/LabelLens/releases/tag/v1.0.0">
+    <img src="https://img.shields.io/badge/Release-v1.0.0-00D2FF?style=for-the-badge" alt="Release v1.0.0" />
+  </a>
+  <a href="https://github.com/Ranit2op/LabelLens">
+    <img src="https://img.shields.io/badge/Architecture-Zero--Backend%20%7C%20100%25%20Offline-blue.svg?style=for-the-badge" alt="Zero Backend" />
+  </a>
+  <a href="https://expo.dev">
+    <img src="https://img.shields.io/badge/React%20Native-Expo%20SDK%2057-black.svg?style=for-the-badge&logo=react" alt="React Native Expo" />
+  </a>
+</p>
+
+---
 
 > **LabelLens** is a modern, privacy-first mobile application that transforms your smartphone camera into an intelligent, real-time food and cosmetic ingredient safety guardian. It runs **100% on-device with zero backend dependencies, zero telemetry, and zero subscription costs.**
 
@@ -69,7 +89,7 @@ Unlike standard apps that merely check for the word *"Sugar"*, LabelLens tracks 
 * **Design & UI:** Glassmorphism Dark Theme (`#090D16`), Vector Icons, Dynamic Score Badges
 * **Haptics:** Native device vibration patterns on danger alert (`expo-haptics`)
 * **Storage:** Local encrypted `AsyncStorage` for search history and profile preferences
-* **Packaging:** Native Android APK standalone compilation via EAS Build
+* **Packaging:** Native Android APK standalone compilation via `gradlew assembleRelease`
 
 ---
 
@@ -77,7 +97,7 @@ Unlike standard apps that merely check for the word *"Sugar"*, LabelLens tracks 
 
 ### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/saharanit196/LabelLens.git
+git clone https://github.com/Ranit2op/LabelLens.git
 cd LabelLens
 npm install
 ```
@@ -90,9 +110,9 @@ npx expo start
 * Or scan the terminal QR code with **Expo Go** on your Android phone!
 
 ### 3. Generate Standalone `.apk`
-To build an installable `.apk` file for your phone or CV showcase:
+To build an installable `.apk` file directly on your PC:
 ```bash
-npx eas build -p android --profile preview
+npm run build:apk
 ```
 
 ---
@@ -101,7 +121,7 @@ npx eas build -p android --profile preview
 
 **Ranit Saha**
 * Email: [saharanit196@gmail.com](mailto:saharanit196@gmail.com)
-* GitHub: [@saharanit196](https://github.com/saharanit196)
+* GitHub: [@Ranit2op](https://github.com/Ranit2op)
 
 ---
 

@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "description": "LabelLens - 100% Offline On-Device Food & Cosmetic Ingredient Safety Scanner",
   "author": "Ranit Saha <saharanit196@gmail.com>",
+  "homepage": "https://github.com/Ranit2op/LabelLens",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ranit2op/LabelLens.git"
+  },
   "main": "index.js",
   "scripts": {
     "start": "expo start",
