@@ -1,11 +1,11 @@
-# 🔍 LabelLens — 100% Offline On-Device Food & Cosmetic Safety Scanner
+# 🔍 LabelLens — On-Device Food & Cosmetic Safety Scanner
 
 <p align="center">
   <img src="./assets/icon.png" width="140" height="140" alt="LabelLens Icon" style="border-radius: 28px;" />
 </p>
 
 <p align="center">
-  <b>100% Offline, Privacy-First Edge AI Ingredient Safety, Additive & Allergen Scanner</b>
+  <b>High-Performance On-Device AI Ingredient Safety, Additive & Allergen Scanner</b>
 </p>
 
 <p align="center">
@@ -15,9 +15,6 @@
   <a href="https://github.com/Ranit2op/LabelLens/releases/tag/v1.0.0">
     <img src="https://img.shields.io/badge/Release-v1.0.0-00D2FF?style=for-the-badge" alt="Release v1.0.0" />
   </a>
-  <a href="https://github.com/Ranit2op/LabelLens">
-    <img src="https://img.shields.io/badge/Architecture-Zero--Backend%20%7C%20100%25%20Offline-blue.svg?style=for-the-badge" alt="Zero Backend" />
-  </a>
   <a href="https://expo.dev">
     <img src="https://img.shields.io/badge/React%20Native-Expo%20SDK%2057-black.svg?style=for-the-badge&logo=react" alt="React Native Expo" />
   </a>
@@ -25,20 +22,20 @@
 
 ---
 
-> **LabelLens** is a modern, privacy-first mobile application that transforms your smartphone camera into an intelligent, real-time food and cosmetic ingredient safety guardian. It runs **100% on-device with zero backend dependencies, zero telemetry, and zero subscription costs.**
+> **LabelLens** is a modern, privacy-first mobile application that transforms your smartphone camera into an intelligent, real-time food and cosmetic ingredient safety guardian. It processes ingredient labels **100% on-device with maximum speed, privacy, and precision.**
 
 ---
 
 ## ⚡ Why Out-of-the-Box & Impactful?
 
-In modern supermarkets and grocery stores, packaged goods are filled with controversial chemical food additives (E-Numbers / INS codes) and disguised sugars masquerading behind 35+ deceptive scientific aliases. Furthermore, individuals suffering from **Celiac Disease (Gluten)**, **Diabetes**, **Lactose Intolerance**, or **Peanut Allergies** face life-threatening consequences from microscopic ingredient print.
+In modern supermarkets and grocery stores, packaged goods are filled with controversial chemical food additives (E-Numbers / INS codes) and disguised sugars masquerading behind 35+ deceptive scientific aliases. Furthermore, individuals suffering from **Celiac Disease (Gluten)**, **Diabetes**, **Lactose Intolerance**, or **Peanut Allergies** face serious health consequences from microscopic ingredient print.
 
 **LabelLens solves this in real time directly from your device:**
 * 📷 **Real-Time OCR & Camera Scanner:** Point camera at any food wrapper, soda can, or shampoo bottle.
-* 🧠 **Offline Knowledge Base:** Instant matching across 150+ E-numbers, 35+ disguised sugars, and top 9 common allergens.
+* 🧠 **On-Device Knowledge Base:** Instant matching across 150+ E-numbers, 35+ disguised sugars, and top 9 common allergens.
 * 🛡️ **Personalized Health Profiles:** Custom toggles for **Diabetic**, **Celiac/Gluten-Free**, **Vegan**, **Nut Allergy**, and **Child-Safe Clean Eating**.
 * 📊 **Transparent 0–100 Health Score:** Mathematical rating breakdown with clear penalization rules (no black-box mystery).
-* 🔒 **100% Privacy & Zero Server Cost:** All string tokenization, NLP regex parsing, and scoring take place locally. Works seamlessly in remote supermarkets with zero internet or mobile data!
+* 🔒 **Complete Privacy & Offline Access:** All string tokenization, NLP regex parsing, and scoring take place locally on your phone. Works seamlessly anywhere, even with zero internet or mobile data!
 
 ---
 
