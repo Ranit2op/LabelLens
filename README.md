@@ -31,11 +31,12 @@
 In modern supermarkets and grocery stores, packaged goods are filled with controversial chemical food additives (E-Numbers / INS codes) and disguised sugars masquerading behind 35+ deceptive scientific aliases. Furthermore, individuals suffering from **Celiac Disease (Gluten)**, **Diabetes**, **Lactose Intolerance**, or **Peanut Allergies** face serious health consequences from microscopic ingredient print.
 
 **LabelLens solves this in real time directly from your device:**
-* 📷 **Real-Time OCR & Camera Scanner:** Point camera at any food wrapper, soda can, or shampoo bottle.
-* 🧠 **On-Device Knowledge Base:** Instant matching across 150+ E-numbers, 35+ disguised sugars, and top 9 common allergens.
-* 🛡️ **Personalized Health Profiles:** Custom toggles for **Diabetic**, **Celiac/Gluten-Free**, **Vegan**, **Nut Allergy**, and **Child-Safe Clean Eating**.
-* 📊 **Transparent 0–100 Health Score:** Mathematical rating breakdown with clear penalization rules (no black-box mystery).
-* 🔒 **Complete Privacy & Offline Access:** All string tokenization, NLP regex parsing, and scoring take place locally on your phone. Works seamlessly anywhere, even with zero internet or mobile data!
+* 📷 **Camera & Gallery Scanner:** Capture any ingredient label live or pick an existing photo from your gallery.
+* 🧠 **Native On-Device OCR:** Bundled Google ML Kit Text Recognition processes images directly on your phone with zero latency.
+* 🔴 **Harmful Ingredients Radar:** Detects dangerous E-numbers, toxic chemical additives, trans-fats, and disguised high-GI sugars.
+* 🟢 **Good & Safe Nutrients:** Highlights wholesome whole grains, natural vitamins, minerals, and safe natural ingredients.
+* 📊 **Transparent 0–100 Health Score:** Instant rating showing exactly how safe the packaged product is.
+* 🔒 **Complete Privacy & Offline Access:** 100% on-device processing. Works anywhere, anytime with no internet connection required.
 
 ---
 
