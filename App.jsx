@@ -8,98 +8,84 @@ import {
   StatusBar,
   Alert,
   NativeModules,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
-
-const { LabelLensOcr } = NativeModules;
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 
-import { ProfileProvider, useProfile } from './src/context/ProfileContext';
 import { analyzeIngredients } from './src/engine/analyzer';
 import ScanReportView from './src/components/ScanReportView';
 import CameraScanner from './src/components/CameraScanner';
-import ProfileModal from './src/components/ProfileModal';
-import PresetSelectorModal from './src/components/PresetSelectorModal';
-import HistoryModal from './src/components/HistoryModal';
-import ManualSearchModal from './src/components/ManualSearchModal';
 
-function MainScreen() {
-  const { profile, addScanToHistory, history } = useProfile();
+const { LabelLensOcr } = NativeModules;
 
-  // Screen & Modal states
+export default function App() {
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
-  const [rawScannedText, setRawScannedText] = useState('');
-  const [currentProductTitle, setCurrentProductTitle] = useState('Scanned Product');
-  const [isSaved, setIsSaved] = useState(false);
-
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isPresetsModalOpen, setIsPresetsModalOpen] = useState(false);
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [isManualSearchOpen, setIsManualSearchOpen] = useState(false);
+  const [isProcessingOcr, setIsProcessingOcr] = useState(false);
+  const [manualText, setManualText] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
 
-  // Run analysis on text
-  const performAnalysis = (text, title = 'Custom Scan') => {
+  // Perform Analysis
+  const performAnalysis = (text) => {
     try {
-      const result = analyzeIngredients(text, profile);
+      const result = analyzeIngredients(text);
       if (!result) {
-        Alert.alert('No Ingredients Found', 'Please ensure the label text contains readable ingredient items.');
+        Alert.alert('কোনো উপাদান পাওয়া যায়নি', 'অনুগ্রহ করে প্যাকেটের লেখার স্পষ্ট ছবি তুলুন বা সঠিক টেক্সট দিন।');
         return;
       }
 
-      setRawScannedText(text);
-      setCurrentProductTitle(title);
       setCurrentAnalysis(result);
-      setIsSaved(false);
 
-      // Trigger tactile haptics based on hazard level
       if (result.score < 50) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-      } else if (result.score < 80) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       }
     } catch (err) {
       console.warn('Analysis error:', err);
-      Alert.alert('Analysis Error', 'Failed to parse ingredients.');
+      Alert.alert('ত্রুটি', 'উপাদান বিশ্লেষণ করতে ব্যর্থ হয়েছে।');
     }
   };
 
-  // Handle Camera Capture with Live On-Device Google ML Kit OCR
+  // Handle Camera Capture with Google ML Kit
   const handleCameraCapture = async (captureData) => {
     setIsCameraActive(false);
     if (!captureData || !captureData.uri) return;
 
     try {
+      setIsProcessingOcr(true);
       if (LabelLensOcr && LabelLensOcr.recognizeText) {
         const ocrText = await LabelLensOcr.recognizeText(captureData.uri);
+        setIsProcessingOcr(false);
         if (ocrText && ocrText.trim().length > 0) {
-          performAnalysis(ocrText, 'Camera Scanned Label');
+          performAnalysis(ocrText);
           return;
         } else {
           Alert.alert(
-            'No Text Detected',
-            'Camera could not find readable text on the package. Please ensure the label is well lit and in focus.'
+            'লেখা শনাক্ত করা যায়নি',
+            'ক্যামেরা ছবিতে কোনো স্পষ্ট লেখা পড়তে পারেনি। দয়া করে পর্যাপ্ত আলোতে প্যাকেটের ওপর ফোকাস করে ছবি তুলুন।'
           );
           return;
         }
       } else {
-        // Notice for Expo Go preview environment
+        setIsProcessingOcr(false);
         Alert.alert(
-          'Standalone APK Feature',
-          'Real On-Device Google ML Kit OCR is compiled in your standalone APK. In Expo Go preview, please use "Paste Text" or "Test Sample Foods".'
+          'Notice',
+          'নেটিভ Google ML Kit OCR শুধুমাত্র ইনস্টল করা APK ফাইলে কাজ করে। Expo Go প্রিভিউতে টেস্ট টেক্সট ব্যবহার করুন।'
         );
       }
     } catch (err) {
+      setIsProcessingOcr(false);
       console.warn('OCR error:', err);
-      Alert.alert('OCR Scan Failed', 'Failed to read text from image: ' + (err.message || ''));
+      Alert.alert('স্ক্যান ব্যর্থ হয়েছে', 'ছবি থেকে লেখা পড়তে সমস্যা হয়েছে।');
     }
   };
 
-  // Handle Photo Picker from Home with Live On-Device Google ML Kit OCR
+  // Handle Photo Picker from Gallery
   const handlePickGallery = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -109,53 +95,33 @@ function MainScreen() {
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const imageUri = result.assets[0].uri;
+        setIsProcessingOcr(true);
+
         if (LabelLensOcr && LabelLensOcr.recognizeText) {
           const ocrText = await LabelLensOcr.recognizeText(imageUri);
+          setIsProcessingOcr(false);
           if (ocrText && ocrText.trim().length > 0) {
-            performAnalysis(ocrText, 'Gallery Scanned Label');
+            performAnalysis(ocrText);
             return;
           } else {
-            Alert.alert('No Text Found', 'Could not read any clear text in the selected photo.');
+            Alert.alert('কোনো লেখা নেই', 'সিলেক্ট করা ছবিতে কোনো স্পষ্ট লেখা পাওয়া যায়নি।');
             return;
           }
         } else {
+          setIsProcessingOcr(false);
           Alert.alert(
-            'Standalone APK Feature',
-            'Real On-Device Google ML Kit OCR is compiled in your standalone APK. In Expo Go preview, please use "Paste Text" or "Test Sample Foods".'
+            'Notice',
+            'নেটিভ Google ML Kit OCR ইনস্টল করা APK ফাইলে কাজ করে।'
           );
         }
       }
     } catch (err) {
-      console.warn('Image picker error:', err);
+      setIsProcessingOcr(false);
+      console.warn('Gallery pick error:', err);
     }
   };
 
-  // Handle Save
-  const handleSaveReport = () => {
-    if (currentAnalysis && !isSaved) {
-      addScanToHistory(currentProductTitle, rawScannedText, currentAnalysis);
-      setIsSaved(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    }
-  };
-
-  // Load from History
-  const handleSelectHistoryItem = (item) => {
-    const reAnalysis = analyzeIngredients(item.rawText, profile);
-    if (reAnalysis) {
-      setCurrentProductTitle(item.title);
-      setRawScannedText(item.rawText);
-      setCurrentAnalysis(reAnalysis);
-      setIsSaved(true);
-    }
-  };
-
-  // Load from Preset
-  const handleSelectPreset = (preset) => {
-    performAnalysis(preset.text, preset.title);
-  };
-
-  // Render Live Camera if active
+  // Render Full Screen Camera
   if (isCameraActive) {
     return (
       <CameraScanner
@@ -165,237 +131,126 @@ function MainScreen() {
     );
   }
 
-  // Render Full Report if analysis is active
+  // Render Simple Good/Bad Report
   if (currentAnalysis) {
     return (
-      <SafeAreaView style={styles.safeContainer}>
-        {/* Top Mini Header */}
-        <View style={styles.reportNavHeader}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => setCurrentAnalysis(null)}
-          >
-            <Ionicons name="arrow-back" size={22} color="#F1F5F9" />
-          </TouchableOpacity>
-          <View style={{ flex: 1, marginRight: 32 }}>
-            <Text style={styles.reportNavTitle} numberOfLines={1}>
-              {currentProductTitle}
-            </Text>
-            <Text style={styles.reportNavSubtitle}>100% Offline On-Device Analysis</Text>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safeContainer}>
+          <StatusBar barStyle="light-content" backgroundColor="#090D16" />
+          <View style={styles.reportNavHeader}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => setCurrentAnalysis(null)}>
+              <Ionicons name="arrow-back" size={22} color="#F1F5F9" />
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.reportNavTitle}>উপাদান বিশ্লেষণ রিপোর্ট</Text>
+              <Text style={styles.reportNavSubtitle}>ভালো ও ক্ষতিকর উপাদানের ফলাফল</Text>
+            </View>
           </View>
-        </View>
 
-        <ScanReportView
-          analysis={currentAnalysis}
-          rawText={rawScannedText}
-          isSaved={isSaved}
-          onSave={handleSaveReport}
-          onRescan={() => {
-            setCurrentAnalysis(null);
-            setIsCameraActive(true);
-          }}
-        />
-      </SafeAreaView>
+          <ScanReportView
+            analysis={currentAnalysis}
+            onRescan={() => {
+              setCurrentAnalysis(null);
+              setIsCameraActive(true);
+            }}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
-  // Main Dashboard UI
+  // Streamlined, Clean Main Screen
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#090D16" />
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.safeContainer}>
+        <StatusBar barStyle="light-content" backgroundColor="#090D16" />
 
-      {/* Top Navbar */}
-      <View style={styles.navbar}>
-        <View style={styles.brandRow}>
+        {/* Brand Header */}
+        <View style={styles.header}>
           <View style={styles.logoBadge}>
-            <Ionicons name="scan" size={20} color="#06B6D4" />
+            <Ionicons name="scan" size={22} color="#06B6D4" />
           </View>
           <View>
             <Text style={styles.brandTitle}>LabelLens</Text>
-            <Text style={styles.brandTagline}>Edge AI Ingredient Safety</Text>
+            <Text style={styles.brandSubtitle}>খাবারের ভালো ও ক্ষতিকর উপাদান স্ক্যানার</Text>
           </View>
         </View>
 
-        <View style={styles.navIcons}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {isProcessingOcr && (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="large" color="#06B6D4" />
+              <Text style={styles.loadingText}>ছবি থেকে উপাদান রিড ও অ্যানালাইজ করা হচ্ছে...</Text>
+            </View>
+          )}
+
+          {/* Action 1: Live Camera Scan */}
           <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => setIsHistoryModalOpen(true)}
+            style={styles.mainCard}
+            activeOpacity={0.8}
+            onPress={() => setIsCameraActive(true)}
           >
-            <Ionicons name="time-outline" size={22} color="#CBD5E1" />
-            {history.length > 0 && <View style={styles.notifDot} />}
+            <View style={[styles.iconCircle, { backgroundColor: '#06B6D420' }]}>
+              <Ionicons name="camera" size={36} color="#06B6D4" />
+            </View>
+            <Text style={styles.cardTitle}>ক্যামেরা দিয়ে ছবি তুলুন</Text>
+            <Text style={styles.cardDesc}>যেকোনো প্যাকেটজাত খাবারের ইনগ্রেডিয়েন্টসের ছবি তুলে সাথে সাথে ভালো ও খারাপ উপাদান দেখুন</Text>
+            <View style={styles.actionBtnPrimary}>
+              <Ionicons name="scan-outline" size={18} color="#090D16" />
+              <Text style={styles.actionBtnPrimaryText}>ক্যামেরা ওপেন করুন</Text>
+            </View>
           </TouchableOpacity>
 
+          {/* Action 2: Gallery Picker */}
           <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => setIsProfileModalOpen(true)}
+            style={styles.secondaryCard}
+            activeOpacity={0.8}
+            onPress={handlePickGallery}
           >
-            <Ionicons name="options-outline" size={22} color="#CBD5E1" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Health Profile Status Strip */}
-        <TouchableOpacity
-          style={styles.profileStrip}
-          onPress={() => setIsProfileModalOpen(true)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.stripLeft}>
-            <Ionicons name="shield-checkmark" size={18} color="#10B981" />
-            <Text style={styles.stripText}>Active Profile Filters</Text>
-          </View>
-          <View style={styles.stripBadges}>
-            {profile.diabetic && (
-              <View style={[styles.stripPill, { borderColor: '#EF4444' }]}>
-                <Text style={[styles.stripPillText, { color: '#EF4444' }]}>Diabetic</Text>
-              </View>
-            )}
-            {profile.glutenSensitive && (
-              <View style={[styles.stripPill, { borderColor: '#F59E0B' }]}>
-                <Text style={[styles.stripPillText, { color: '#F59E0B' }]}>Gluten-Free</Text>
-              </View>
-            )}
-            {profile.vegan && (
-              <View style={[styles.stripPill, { borderColor: '#10B981' }]}>
-                <Text style={[styles.stripPillText, { color: '#10B981' }]}>Vegan</Text>
-              </View>
-            )}
-            {profile.peanutAllergy && (
-              <View style={[styles.stripPill, { borderColor: '#EF4444' }]}>
-                <Text style={[styles.stripPillText, { color: '#EF4444' }]}>No Peanuts</Text>
-              </View>
-            )}
-            {!profile.diabetic && !profile.glutenSensitive && !profile.vegan && !profile.peanutAllergy && (
-              <Text style={styles.defaultProfileText}>Standard (Tap to customize)</Text>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        {/* Hero Camera Scanner Card */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroGlow} />
-          <View style={styles.heroContent}>
-            <View style={styles.heroIconCircle}>
-              <Ionicons name="camera" size={38} color="#06B6D4" />
+            <View style={[styles.iconCircle, { backgroundColor: '#3B82F620' }]}>
+              <Ionicons name="images" size={32} color="#3B82F6" />
             </View>
-            <Text style={styles.heroTitle}>Live Ingredient Scanner</Text>
-            <Text style={styles.heroSubtitle}>
-              Scan food packages, cold drinks, or cosmetics in real-time. Instantly detects hazardous E-numbers & hidden sugars.
-            </Text>
-
-            <View style={styles.heroBtnRow}>
-              <TouchableOpacity
-                style={styles.primaryScanBtn}
-                activeOpacity={0.8}
-                onPress={() => setIsCameraActive(true)}
-              >
-                <Ionicons name="scan-outline" size={20} color="#090D16" />
-                <Text style={styles.primaryScanBtnText}>Open Camera</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.secondaryScanBtn}
-                activeOpacity={0.8}
-                onPress={handlePickGallery}
-              >
-                <Ionicons name="images-outline" size={20} color="#06B6D4" />
-                <Text style={styles.secondaryScanBtnText}>Gallery</Text>
-              </TouchableOpacity>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.secondaryCardTitle}>গ্যালারি থেকে ছবি দিন</Text>
+              <Text style={styles.secondaryCardDesc}>ফোনে আগে থেকে থাকা প্যাকেটের ছবি সিলেক্ট করে স্ক্যান করুন</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Quick Testing Options */}
-        <Text style={styles.sectionHeader}>Quick Actions & Testing</Text>
-        <View style={styles.gridRow}>
-          {/* Preset Foods Test */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            activeOpacity={0.75}
-            onPress={() => setIsPresetsModalOpen(true)}
-          >
-            <View style={[styles.gridIconCircle, { backgroundColor: '#F59E0B20' }]}>
-              <Ionicons name="fast-food-outline" size={22} color="#F59E0B" />
-            </View>
-            <Text style={styles.gridCardTitle}>Test Sample Foods</Text>
-            <Text style={styles.gridCardDesc}>Test Oreo, Cola, Instant Noodles & Shampoo without physical labels</Text>
+            <Ionicons name="chevron-forward" size={20} color="#64748B" />
           </TouchableOpacity>
 
-          {/* Paste Ingredients Text */}
-          <TouchableOpacity
-            style={styles.gridCard}
-            activeOpacity={0.75}
-            onPress={() => setIsManualSearchOpen(true)}
-          >
-            <View style={[styles.gridIconCircle, { backgroundColor: '#3B82F620' }]}>
-              <Ionicons name="create-outline" size={22} color="#3B82F6" />
-            </View>
-            <Text style={styles.gridCardTitle}>Paste Text</Text>
-            <Text style={styles.gridCardDesc}>Type or paste raw ingredient text to check instantly</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Action 3: Simple Manual Paste Option */}
+          <View style={styles.manualSection}>
+            <TouchableOpacity
+              style={styles.toggleManualBtn}
+              onPress={() => setShowManualInput(!showManualInput)}
+            >
+              <Ionicons name={showManualInput ? 'chevron-up' : 'create-outline'} size={18} color="#06B6D4" />
+              <Text style={styles.toggleManualText}>
+                {showManualInput ? 'টাইপ বক্স বন্ধ করুন' : 'লেখা টাইপ বা পেস্ট করে টেস্ট করবেন?'}
+              </Text>
+            </TouchableOpacity>
 
-        {/* Informational Cards */}
-        <Text style={styles.sectionHeader}>Food Additive Insights</Text>
-        <View style={styles.tipCard}>
-          <View style={styles.tipHeader}>
-            <Ionicons name="bulb-outline" size={20} color="#F59E0B" />
-            <Text style={styles.tipTitle}>The Maltodextrin Trap</Text>
+            {showManualInput && (
+              <View style={styles.inputBox}>
+                <TextInput
+                  style={styles.textInput}
+                  multiline
+                  placeholder="উপাদানের নাম পেস্ট করুন... (যেমন: Flour, Palm Oil, E621, Sugar, Maltodextrin)"
+                  placeholderTextColor="#64748B"
+                  value={manualText}
+                  onChangeText={setManualText}
+                />
+                <TouchableOpacity
+                  style={[styles.analyzeBtn, !manualText.trim() && { opacity: 0.5 }]}
+                  disabled={!manualText.trim()}
+                  onPress={() => performAnalysis(manualText)}
+                >
+                  <Text style={styles.analyzeBtnText}>উপাদান যাচাই করুন</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
-          <Text style={styles.tipBody}>
-            Maltodextrin has a Glycemic Index of <Text style={{ color: '#EF4444', fontWeight: '800' }}>110</Text>—significantly higher than pure table sugar (GI 65). It is frequently disguised in savory chips and protein supplements.
-          </Text>
-        </View>
-
-        <View style={styles.tipCard}>
-          <View style={styles.tipHeader}>
-            <Ionicons name="warning-outline" size={20} color="#EF4444" />
-            <Text style={[styles.tipTitle, { color: '#EF4444' }]}>Top 5 Red-Flag Additives</Text>
-          </View>
-          <Text style={styles.tipBody}>
-            • <Text style={{ fontWeight: '700', color: '#F1F5F9' }}>E102 (Tartrazine):</Text> Hyperactivity & asthma trigger{'\n'}
-            • <Text style={{ fontWeight: '700', color: '#F1F5F9' }}>E211 (Sodium Benzoate):</Text> Forms benzene with Vitamin C{'\n'}
-            • <Text style={{ fontWeight: '700', color: '#F1F5F9' }}>E250 (Sodium Nitrite):</Text> Meat preservative cancer risk{'\n'}
-            • <Text style={{ fontWeight: '700', color: '#F1F5F9' }}>E621 (MSG):</Text> Neuro-excitatory headache trigger{'\n'}
-            • <Text style={{ fontWeight: '700', color: '#F1F5F9' }}>E951 (Aspartame):</Text> Artificial sweetener WHO group 2B
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* Modals */}
-      <ProfileModal
-        visible={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-      />
-
-      <PresetSelectorModal
-        visible={isPresetsModalOpen}
-        onClose={() => setIsPresetsModalOpen(false)}
-        onSelectPreset={handleSelectPreset}
-      />
-
-      <HistoryModal
-        visible={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        onSelectHistoryItem={handleSelectHistoryItem}
-      />
-
-      <ManualSearchModal
-        visible={isManualSearchOpen}
-        onClose={() => setIsManualSearchOpen(false)}
-        onAnalyzeText={performAnalysis}
-      />
-    </SafeAreaView>
-  );
-}
-
-export default function App() {
-  return (
-    <SafeAreaProvider>
-      <ProfileProvider>
-        <MainScreen />
-      </ProfileProvider>
+        </ScrollView>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -405,264 +260,176 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#090D16',
   },
-  navbar: {
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   logoBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: '#06B6D41A',
-    borderWidth: 1,
-    borderColor: '#06B6D450',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#06B6D440',
   },
   brandTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '900',
     color: '#F1F5F9',
     letterSpacing: 0.5,
   },
-  brandTagline: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  navIcons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#131A29',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    position: 'relative',
-  },
-  notifDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#06B6D4',
+  brandSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 1,
   },
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
   },
-  profileStrip: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  loadingCard: {
     backgroundColor: '#111726',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    marginBottom: 16,
-  },
-  stripLeft: {
-    flexDirection: 'row',
+    borderRadius: 14,
+    padding: 16,
     alignItems: 'center',
-    gap: 6,
-  },
-  stripText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  stripBadges: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  stripPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    marginBottom: 16,
     borderWidth: 1,
+    borderColor: '#06B6D4',
   },
-  stripPillText: {
-    fontSize: 10,
-    fontWeight: '800',
+  loadingText: {
+    color: '#06B6D4',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8,
   },
-  defaultProfileText: {
-    fontSize: 11,
-    color: '#64748B',
-  },
-  heroCard: {
+  mainCard: {
     backgroundColor: '#111726',
     borderRadius: 20,
-    padding: 22,
-    borderWidth: 1,
-    borderColor: '#06B6D440',
-    marginBottom: 22,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  heroGlow: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: '#06B6D415',
-  },
-  heroContent: {
+    padding: 24,
     alignItems: 'center',
-  },
-  heroIconCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#06B6D415',
     borderWidth: 1,
-    borderColor: '#06B6D460',
+    borderColor: '#06B6D450',
+    marginBottom: 16,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
   },
-  heroTitle: {
-    fontSize: 20,
+  cardTitle: {
+    fontSize: 19,
     fontWeight: '800',
     color: '#F1F5F9',
-    textAlign: 'center',
+    marginBottom: 6,
   },
-  heroSubtitle: {
+  cardDesc: {
     fontSize: 13,
     color: '#94A3B8',
     textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 20,
     lineHeight: 18,
+    marginBottom: 20,
   },
-  heroBtnRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  primaryScanBtn: {
-    flex: 2,
+  actionBtnPrimary: {
     flexDirection: 'row',
     backgroundColor: '#06B6D4',
     paddingVertical: 14,
+    paddingHorizontal: 28,
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
   },
-  primaryScanBtnText: {
+  actionBtnPrimaryText: {
     color: '#090D16',
-    fontWeight: '800',
     fontSize: 15,
-  },
-  secondaryScanBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#0E2439',
-    paddingVertical: 14,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#06B6D440',
-  },
-  secondaryScanBtnText: {
-    color: '#06B6D4',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  sectionHeader: {
-    fontSize: 14,
     fontWeight: '800',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 12,
   },
-  gridRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 22,
-  },
-  gridCard: {
-    flex: 1,
+  secondaryCard: {
     backgroundColor: '#111726',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#1E293B',
+    marginBottom: 20,
   },
-  gridIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  gridCardTitle: {
-    fontSize: 14,
+  secondaryCardTitle: {
+    fontSize: 15,
     fontWeight: '700',
     color: '#F1F5F9',
-    marginBottom: 4,
   },
-  gridCardDesc: {
-    fontSize: 11,
+  secondaryCardDesc: {
+    fontSize: 12,
     color: '#64748B',
-    lineHeight: 15,
+    marginTop: 2,
+    lineHeight: 16,
   },
-  tipCard: {
+  manualSection: {
     backgroundColor: '#111726',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
     borderColor: '#1E293B',
-    marginBottom: 12,
   },
-  tipHeader: {
+  toggleManualBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
-    marginBottom: 6,
+    paddingVertical: 4,
   },
-  tipTitle: {
+  toggleManualText: {
+    color: '#06B6D4',
     fontSize: 13,
-    fontWeight: '800',
-    color: '#F59E0B',
+    fontWeight: '700',
   },
-  tipBody: {
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 18,
+  inputBox: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B',
+    paddingTop: 12,
+  },
+  textInput: {
+    backgroundColor: '#0F1523',
+    borderRadius: 10,
+    padding: 12,
+    color: '#F1F5F9',
+    fontSize: 13,
+    height: 90,
+    textAlignVertical: 'top',
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    marginBottom: 10,
+  },
+  analyzeBtn: {
+    backgroundColor: '#2563EB',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  analyzeBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   reportNavHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
+    gap: 12,
   },
   backBtn: {
     width: 38,
@@ -671,7 +438,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#131A29',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
     borderWidth: 1,
     borderColor: '#1E293B',
   },

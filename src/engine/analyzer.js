@@ -1,11 +1,10 @@
 // 100% Offline Core Analysis Engine for LabelLens
+// Simple, transparent categorization: Good vs. Bad / Harmful ingredients
+
 import { E_NUMBERS } from '../database/eNumbers';
 import { HIDDEN_SUGARS } from '../database/hiddenSugars';
 import { ALLERGENS } from '../database/allergens';
 
-/**
- * Normalizes input text and extracts tokens, phrases, and E-codes
- */
 export function normalizeText(rawText) {
   if (!rawText || typeof rawText !== 'string') return '';
   return rawText
@@ -16,13 +15,9 @@ export function normalizeText(rawText) {
     .trim();
 }
 
-/**
- * Detects all E-numbers and INS codes inside an ingredient text
- */
 export function extractAdditives(text) {
   const found = new Map();
 
-  // Pattern 1: e.g. E102, E-102, E 102, INS 102, INS-102, INS102
   const ePattern = /\b(?:ins|e)[\s\-_]?([0-9]{3,4}[a-z]?)/gi;
   let match;
   while ((match = ePattern.exec(text)) !== null) {
@@ -37,10 +32,8 @@ export function extractAdditives(text) {
     }
   }
 
-  // Also check additive common names in text (e.g., "monosodium glutamate", "sodium benzoate", "aspartame")
   Object.values(E_NUMBERS).forEach(additive => {
     const nameLower = additive.name.toLowerCase();
-    // Split on parentheses or slashes to get distinct names
     const parts = nameLower.split(/[\(\)\/]/).map(p => p.trim()).filter(p => p.length > 3);
     for (const part of parts) {
       if (text.includes(part)) {
@@ -53,16 +46,12 @@ export function extractAdditives(text) {
   return Array.from(found.values());
 }
 
-/**
- * Detects disguised sugars from text
- */
 export function extractHiddenSugars(text) {
   const detected = [];
   const lowerText = text.toLowerCase();
 
   for (const sugar of HIDDEN_SUGARS) {
     for (const alias of sugar.aliases) {
-      // Word boundary regex
       const regex = new RegExp(`\\b${alias}\\b`, 'i');
       if (regex.test(lowerText)) {
         detected.push(sugar);
@@ -73,159 +62,163 @@ export function extractHiddenSugars(text) {
   return detected;
 }
 
-/**
- * Checks for allergen keywords according to active user profile restrictions
- */
-export function extractAllergens(text, userProfile = {}) {
+export function extractAllergens(text) {
   const results = [];
   const lowerText = text.toLowerCase();
 
-  for (const [allergenKey, allergen] of Object.entries(ALLERGENS)) {
-    const matchedKeywords = [];
+  for (const [key, allergen] of Object.entries(ALLERGENS)) {
     for (const keyword of allergen.keywords) {
       const regex = new RegExp(`\\b${keyword}\\b`, 'i');
       if (regex.test(lowerText)) {
-        matchedKeywords.push(keyword);
+        results.push(allergen);
+        break;
       }
     }
-
-    if (matchedKeywords.length > 0) {
-      // Check if this allergen directly violates user profile
-      let isProfileViolation = false;
-      if (allergenKey === 'gluten' && userProfile.glutenSensitive) isProfileViolation = true;
-      if (allergenKey === 'dairy' && (userProfile.lactoseIntolerant || userProfile.vegan)) isProfileViolation = true;
-      if (allergenKey === 'peanuts' && userProfile.peanutAllergy) isProfileViolation = true;
-      if (allergenKey === 'treeNuts' && userProfile.nutAllergy) isProfileViolation = true;
-      if (allergenKey === 'eggs' && (userProfile.eggAllergy || userProfile.vegan)) isProfileViolation = true;
-      if (allergenKey === 'soy' && userProfile.soyAllergy) isProfileViolation = true;
-      if (allergenKey === 'palmOil' && userProfile.palmOilFree) isProfileViolation = true;
-      if (allergenKey === 'transFat' && userProfile.heartHealthy) isProfileViolation = true;
-
-      results.push({
-        ...allergen,
-        matchedKeywords: Array.from(new Set(matchedKeywords)),
-        isProfileViolation,
-      });
-    }
   }
-
   return results;
 }
 
+const BENEFICIAL_SOURCES = [
+  { word: 'whole wheat', name: 'Whole Wheat', benefit: 'High in natural dietary fiber and B-complex vitamins.' },
+  { word: 'atta', name: 'Whole Wheat (Atta)', benefit: 'Complex carbohydrates providing steady energy.' },
+  { word: 'oats', name: 'Rolled Oats', benefit: 'Rich in beta-glucan fiber, supports heart and gut health.' },
+  { word: 'milk', name: 'Milk / Dairy Nutrients', benefit: 'Natural source of calcium and essential amino acids.' },
+  { word: 'almond', name: 'Almonds', benefit: 'Packed with healthy monounsaturated fats and Vitamin E.' },
+  { word: 'cashew', name: 'Cashews', benefit: 'Good source of magnesium and plant protein.' },
+  { word: 'cocoa', name: 'Cocoa Solids', benefit: 'Rich in natural polyphenol antioxidants.' },
+  { word: 'turmeric', name: 'Turmeric / Curcumin', benefit: 'Potent natural anti-inflammatory and cellular protector.' },
+  { word: 'salt', name: 'Salt (Iodized)', benefit: 'Provides essential sodium and iodine for thyroid health.' },
+];
+
 /**
- * Master Analysis Function: Computes Health Score, Risk Badges, and Profile Warnings
+ * Master Analyzer: Identifies Good vs Bad / Harmful ingredients
  */
-export function analyzeIngredients(rawText, userProfile = {}) {
+export function analyzeIngredients(rawText) {
   const normalized = normalizeText(rawText);
-  if (!normalized || normalized.length < 5) {
-    return null;
-  }
+  if (!normalized || normalized.length < 3) return null;
 
   const additives = extractAdditives(normalized);
   const hiddenSugars = extractHiddenSugars(normalized);
-  const allergens = extractAllergens(normalized, userProfile);
+  const allergens = extractAllergens(normalized);
 
-  // Group additives by hazard level
-  const dangerAdditives = additives.filter(a => a.risk === 'danger');
-  const cautionAdditives = additives.filter(a => a.risk === 'caution');
-  const safeAdditives = additives.filter(a => a.risk === 'safe');
+  const badIngredients = [];
+  const goodIngredients = [];
 
-  // Compute 0 - 100 Health Score
-  let score = 100;
-  const deductions = [];
-
-  // Deduct for High-risk/Dangerous Additives (-15 per danger additive)
-  dangerAdditives.forEach(item => {
-    score -= 15;
-    deductions.push(`-15: Hazardous Additive (${item.code} - ${item.name})`);
+  // 1. Process Chemical Additives (E-numbers / INS)
+  additives.forEach(item => {
+    if (item.risk === 'danger') {
+      badIngredients.push({
+        name: item.name,
+        code: item.code,
+        severity: 'danger',
+        riskLabel: 'Hazardous Chemical',
+        reason: (item.sideEffects && item.sideEffects[0]) || item.description,
+      });
+    } else if (item.risk === 'caution') {
+      badIngredients.push({
+        name: item.name,
+        code: item.code,
+        severity: 'caution',
+        riskLabel: 'Moderate Additive',
+        reason: (item.sideEffects && item.sideEffects[0]) || item.description,
+      });
+    } else {
+      goodIngredients.push({
+        name: item.name,
+        code: item.code,
+        benefit: item.description || 'Natural, safe food additive',
+      });
+    }
   });
 
-  // Deduct for Caution Additives (-6 per item)
-  cautionAdditives.forEach(item => {
-    score -= 6;
-    deductions.push(`-6: Caution Additive (${item.code} - ${item.name})`);
-  });
-
-  // Deduct for Hidden Sugars (-8 each, or -15 if diabetic)
+  // 2. Process Disguised High-Glycemic Sugars
   hiddenSugars.forEach(sugar => {
-    const penalty = userProfile.diabetic ? 14 : 7;
-    score -= penalty;
-    deductions.push(`-${penalty}: Hidden High-GI Sugar (${sugar.name})`);
+    badIngredients.push({
+      name: sugar.name,
+      code: `GI: ${sugar.glycemicIndex}`,
+      severity: 'danger',
+      riskLabel: 'Disguised Sugar',
+      reason: sugar.description,
+    });
   });
 
-  // Deduct heavily for Profile Violations (-20 per violation)
-  const profileViolations = allergens.filter(a => a.isProfileViolation);
-  profileViolations.forEach(v => {
-    score -= 20;
-    deductions.push(`-20: Conflict with your Personal Health Profile (${v.name})`);
+  // 3. Process Harmful Oils & Fats
+  allergens.forEach(allergen => {
+    if (allergen.id === 'transFat') {
+      badIngredients.push({
+        name: 'Trans Fats (Hydrogenated Oils)',
+        code: 'Banned Fat',
+        severity: 'danger',
+        riskLabel: 'Heart Hazard',
+        reason: 'Partially hydrogenated vegetable fats elevate bad cholesterol (LDL) and damage arteries.',
+      });
+    } else if (allergen.id === 'palmOil') {
+      badIngredients.push({
+        name: 'Palm Oil / Palmolein',
+        code: 'Saturated Fat',
+        severity: 'caution',
+        riskLabel: 'High Saturated Fat',
+        reason: 'High in palmitic acid (44%), causes arterial inflammation and heart strain.',
+      });
+    } else if (allergen.id === 'cosmeticToxins') {
+      badIngredients.push({
+        name: 'Cosmetic Toxins (SLS / Parabens)',
+        code: 'Toxin',
+        severity: 'danger',
+        riskLabel: 'Skin / Hormone Hazard',
+        reason: allergen.description,
+      });
+    }
   });
 
-  // Deduct for Industrial Trans Fats (-15)
-  const hasTransFat = allergens.some(a => a.id === 'transFat');
-  if (hasTransFat) {
-    score -= 15;
-    deductions.push('-15: Contains Industrial Hydrogenated Trans Fat');
+  // 4. Identify Wholesome / Good Ingredients
+  BENEFICIAL_SOURCES.forEach(item => {
+    if (normalized.includes(item.word) && !goodIngredients.some(g => g.name.toLowerCase().includes(item.word))) {
+      goodIngredients.push({
+        name: item.name,
+        code: 'Wholesome',
+        benefit: item.benefit,
+      });
+    }
+  });
+
+  // If no good ingredients matched yet, extract natural components
+  if (goodIngredients.length === 0 && badIngredients.length === 0) {
+    goodIngredients.push({
+      name: 'Unspecified Ingredients',
+      code: 'Clean',
+      benefit: 'No toxic chemicals or artificial sweeteners detected in the scanned text.',
+    });
   }
 
-  // Deduct for Palm Oil if flagged
-  const hasPalmOil = allergens.some(a => a.id === 'palmOil');
-  if (hasPalmOil && !userProfile.palmOilFree) {
-    score -= 6;
-    deductions.push('-6: High Saturated Palm Oil detected');
-  }
+  // Calculate 0-100 Score
+  let score = 100;
+  badIngredients.forEach(b => {
+    if (b.severity === 'danger') score -= 18;
+    else score -= 8;
+  });
+  score = Math.max(10, Math.min(100, Math.round(score)));
 
-  // Clamp score between 0 and 100
-  score = Math.max(5, Math.min(100, Math.round(score)));
-
-  // Calculate Grade
-  let grade = 'A';
+  let verdict = 'Safe & Wholesome';
   let verdictColor = '#10B981'; // Green
-  let verdictTitle = 'Safe & Clean';
-  let summary = 'This product appears to have clean ingredients with minimal hazardous additives.';
+  let summary = 'This item has clean ingredients with no major toxic additives found.';
 
-  if (score < 40) {
-    grade = 'F';
+  if (score < 50) {
+    verdict = 'Harmful / High Risk';
     verdictColor = '#EF4444'; // Red
-    verdictTitle = 'Unsafe / Severe Hazard';
-    summary = 'Multiple high-risk chemicals, hidden sugars, or health profile conflicts detected. Caution advised!';
-  } else if (score < 60) {
-    grade = 'D';
-    verdictColor = '#F97316'; // Orange
-    verdictTitle = 'Poor Quality';
-    summary = 'Contains concerning additives, artificial coloring, or high-glycemic sweeteners.';
+    summary = 'Multiple dangerous chemicals, artificial colors, or hidden sugars detected!';
   } else if (score < 75) {
-    grade = 'C';
+    verdict = 'Moderate / Consume Sparingly';
     verdictColor = '#F59E0B'; // Amber
-    verdictTitle = 'Moderate / Consume Sparingly';
-    summary = 'Moderate level of processing. Contains some synthetic stabilizers or preservatives.';
-  } else if (score < 90) {
-    grade = 'B';
-    verdictColor = '#3B82F6'; // Blue
-    verdictTitle = 'Good / Acceptable';
-    summary = 'Relatively clean formula with only mild, well-tolerated preservatives or colors.';
+    summary = 'Contains some processed additives or high-saturated oils. Eat in moderation.';
   }
 
   return {
     score,
-    grade,
+    verdict,
     verdictColor,
-    verdictTitle,
     summary,
-    deductions,
-    stats: {
-      totalAdditives: additives.length,
-      dangerCount: dangerAdditives.length,
-      cautionCount: cautionAdditives.length,
-      safeCount: safeAdditives.length,
-      sugarCount: hiddenSugars.length,
-      allergenCount: allergens.length,
-      profileViolationsCount: profileViolations.length,
-    },
-    dangerAdditives,
-    cautionAdditives,
-    safeAdditives,
-    hiddenSugars,
-    allergens,
-    profileViolations,
+    badIngredients,
+    goodIngredients,
   };
 }

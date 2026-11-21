@@ -10,7 +10,6 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CameraScanner({ onCaptureText, onClose }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -32,13 +31,13 @@ export default function CameraScanner({ onCaptureText, onClose }) {
         <Ionicons name="camera-outline" size={54} color="#EF4444" style={{ marginBottom: 16 }} />
         <Text style={styles.permTitle}>Camera Access Required</Text>
         <Text style={styles.permDesc}>
-          LabelLens needs camera permission to scan ingredient labels on food packets.
+          LabelLens needs camera access to scan food and cosmetic labels.
         </Text>
         <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>Grant Camera Permission</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-          <Text style={styles.cancelBtnText}>Back to Home</Text>
+          <Text style={styles.cancelBtnText}>Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -93,7 +92,7 @@ export default function CameraScanner({ onCaptureText, onClose }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* 1. Full-screen Camera Preview (Self-closing, fills entire screen) */}
+      {/* 1. Full-screen Camera Preview */}
       <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFillObject}
@@ -101,63 +100,60 @@ export default function CameraScanner({ onCaptureText, onClose }) {
         enableTorch={torch}
       />
 
-      {/* 2. Clean UI Overlay sitting properly on top of the camera */}
-      <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
-        {/* Top Control Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.topBtn} onPress={onClose}>
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.topTitle}>Scan Label</Text>
-          <TouchableOpacity style={styles.topBtn} onPress={() => setTorch(!torch)}>
-            <Ionicons name={torch ? 'flash' : 'flash-off'} size={22} color={torch ? '#F59E0B' : '#FFF'} />
-          </TouchableOpacity>
-        </View>
+      {/* 2. Top Bar (Pinned to Top) */}
+      <View style={styles.topBar}>
+        <TouchableOpacity style={styles.iconCircleBtn} onPress={onClose}>
+          <Ionicons name="arrow-back" size={24} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.topTitle}>Scan Label</Text>
+        <TouchableOpacity style={styles.iconCircleBtn} onPress={() => setTorch(!torch)}>
+          <Ionicons name={torch ? 'flash' : 'flash-off'} size={22} color={torch ? '#F59E0B' : '#FFF'} />
+        </TouchableOpacity>
+      </View>
 
-        {/* Viewfinder Target Frame (Centered) */}
-        <View style={styles.viewfinderContainer} pointerEvents="none">
-          <View style={styles.targetFrame}>
-            <View style={[styles.corner, styles.cornerTL]} />
-            <View style={[styles.corner, styles.cornerTR]} />
-            <View style={[styles.corner, styles.cornerBL]} />
-            <View style={[styles.corner, styles.cornerBR]} />
+      {/* 3. Center Target Viewfinder Frame */}
+      <View style={styles.centerTargetFrame} pointerEvents="none">
+        <View style={styles.frameBox}>
+          <View style={[styles.corner, styles.cornerTL]} />
+          <View style={[styles.corner, styles.cornerTR]} />
+          <View style={[styles.corner, styles.cornerBL]} />
+          <View style={[styles.corner, styles.cornerBR]} />
 
-            <View style={styles.hintBadge}>
-              <Text style={styles.hintText}>Align Ingredients Table Here</Text>
-            </View>
+          <View style={styles.hintBadge}>
+            <Text style={styles.hintText}>প্যাকেটের উপাদানের তালিকা এখানে ধরুন</Text>
           </View>
         </View>
+      </View>
 
-        {/* Bottom Shutter Controls (Sitting at bottom) */}
-        <View style={styles.bottomBar}>
-          {/* Gallery Picker Button */}
-          <TouchableOpacity style={styles.auxBtn} onPress={pickFromGallery}>
-            <View style={styles.auxIconCircle}>
-              <Ionicons name="images-outline" size={24} color="#FFF" />
-            </View>
-            <Text style={styles.auxBtnLabel}>Gallery</Text>
-          </TouchableOpacity>
+      {/* 4. Bottom Controls Bar (Strictly Pinned to Bottom) */}
+      <View style={styles.bottomControlsBar}>
+        {/* Gallery Button */}
+        <TouchableOpacity style={styles.auxBtn} onPress={pickFromGallery}>
+          <View style={styles.iconCircleBtn}>
+            <Ionicons name="images-outline" size={24} color="#FFF" />
+          </View>
+          <Text style={styles.auxBtnLabel}>Gallery</Text>
+        </TouchableOpacity>
 
-          {/* Shutter Button in bottom center */}
-          <TouchableOpacity
-            style={styles.shutterOuter}
-            onPress={takeSnapshot}
-            disabled={isProcessing}
-            activeOpacity={0.7}
-          >
-            <View style={styles.shutterInner}>
-              {isProcessing ? (
-                <ActivityIndicator color="#090D16" size="small" />
-              ) : (
-                <View style={styles.shutterCenter} />
-              )}
-            </View>
-          </TouchableOpacity>
+        {/* Big Center Shutter Button */}
+        <TouchableOpacity
+          style={styles.shutterOuter}
+          onPress={takeSnapshot}
+          disabled={isProcessing}
+          activeOpacity={0.7}
+        >
+          <View style={styles.shutterInner}>
+            {isProcessing ? (
+              <ActivityIndicator color="#090D16" size="small" />
+            ) : (
+              <View style={styles.shutterCenter} />
+            )}
+          </View>
+        </TouchableOpacity>
 
-          {/* Spacer to keep shutter centered */}
-          <View style={styles.auxBtnSpacer} />
-        </View>
-      </SafeAreaView>
+        {/* Balancing Spacer */}
+        <View style={styles.auxBtnSpacer} />
+      </View>
     </View>
   );
 }
@@ -166,45 +162,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    width: '100%',
-    height: '100%',
-  },
-  uiOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    zIndex: 10,
+    position: 'relative',
   },
   topBar: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    zIndex: 30,
   },
-  topBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  iconCircleBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   topTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#FFF',
+    letterSpacing: 0.5,
   },
-  viewfinderContainer: {
-    flex: 1,
+  centerTargetFrame: {
+    position: 'absolute',
+    top: '25%',
+    left: 24,
+    right: 24,
+    height: 260,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 28,
+    zIndex: 20,
   },
-  targetFrame: {
+  frameBox: {
     width: '100%',
-    height: 250,
+    height: '100%',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -245,38 +245,56 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
   },
   hintBadge: {
-    backgroundColor: 'rgba(9, 13, 22, 0.75)',
+    backgroundColor: 'rgba(9, 13, 22, 0.85)',
     paddingHorizontal: 16,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.4)',
+    borderColor: 'rgba(6, 182, 212, 0.5)',
   },
   hintText: {
     color: '#06B6D4',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
-  bottomBar: {
+  bottomControlsBar: {
+    position: 'absolute',
+    bottom: 45,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 36,
-    paddingBottom: 32,
+    paddingHorizontal: 40,
+    zIndex: 30,
+  },
+  auxBtn: {
+    alignItems: 'center',
+    width: 54,
+  },
+  auxBtnLabel: {
+    color: '#E2E8F0',
+    fontSize: 11,
+    marginTop: 6,
+    fontWeight: '700',
+  },
+  auxBtnSpacer: {
+    width: 54,
   },
   shutterOuter: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     borderWidth: 4,
     borderColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   shutterInner: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
@@ -286,27 +304,6 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     backgroundColor: '#06B6D4',
-  },
-  auxBtn: {
-    alignItems: 'center',
-    width: 50,
-  },
-  auxIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  auxBtnLabel: {
-    color: '#CBD5E1',
-    fontSize: 11,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  auxBtnSpacer: {
-    width: 50,
   },
   centerContainer: {
     flex: 1,
