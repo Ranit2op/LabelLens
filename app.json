@@ -2,7 +2,7 @@
   "expo": {
     "name": "LabelLens",
     "slug": "labellens",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "labellens",
@@ -18,7 +18,7 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.ranit.labellens",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

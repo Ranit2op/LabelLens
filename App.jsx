@@ -8,7 +8,6 @@ import {
   StatusBar,
   Alert,
   NativeModules,
-  TextInput,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -26,8 +25,6 @@ export default function App() {
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isProcessingOcr, setIsProcessingOcr] = useState(false);
-  const [manualText, setManualText] = useState('');
-  const [showManualInput, setShowManualInput] = useState(false);
 
   // Perform Analysis
   const performAnalysis = (text) => {
@@ -176,7 +173,7 @@ export default function App() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={styles.brandTitle}>LabelLens</Text>
               <View style={styles.versionBadge}>
-                <Text style={styles.versionBadgeText}>v1.0.1</Text>
+                <Text style={styles.versionBadgeText}>v1.0.3</Text>
               </View>
             </View>
             <Text style={styles.brandSubtitle}>Food & Cosmetic Ingredient Safety Scanner</Text>
@@ -223,39 +220,6 @@ export default function App() {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
           </TouchableOpacity>
-
-          {/* Action 3: Simple Manual Paste Option */}
-          <View style={styles.manualSection}>
-            <TouchableOpacity
-              style={styles.toggleManualBtn}
-              onPress={() => setShowManualInput(!showManualInput)}
-            >
-              <Ionicons name={showManualInput ? 'chevron-up' : 'create-outline'} size={18} color="#0284C7" />
-              <Text style={styles.toggleManualText}>
-                {showManualInput ? 'Close Text Box' : 'Or paste/type ingredient text manually?'}
-              </Text>
-            </TouchableOpacity>
-
-            {showManualInput && (
-              <View style={styles.inputBox}>
-                <TextInput
-                  style={styles.textInput}
-                  multiline
-                  placeholder="Paste ingredients here... (e.g. Flour, Palm Oil, E621, Sugar, Maltodextrin)"
-                  placeholderTextColor="#94A3B8"
-                  value={manualText}
-                  onChangeText={setManualText}
-                />
-                <TouchableOpacity
-                  style={[styles.analyzeBtn, !manualText.trim() && { opacity: 0.5 }]}
-                  disabled={!manualText.trim()}
-                  onPress={() => performAnalysis(manualText)}
-                >
-                  <Text style={styles.analyzeBtnText}>Analyze Ingredients</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -409,59 +373,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
     lineHeight: 16,
-  },
-  manualSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  toggleManualBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  toggleManualText: {
-    color: '#0284C7',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  inputBox: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 12,
-  },
-  textInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 12,
-    color: '#0F172A',
-    fontSize: 13,
-    height: 90,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 10,
-  },
-  analyzeBtn: {
-    backgroundColor: '#0284C7',
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  analyzeBtnText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
   reportNavHeader: {
     flexDirection: 'row',

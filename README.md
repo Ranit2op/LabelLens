@@ -9,11 +9,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Ranit2op/LabelLens/releases/download/v1.0.2/LabelLens-v1.0.2.apk">
-    <img src="https://img.shields.io/badge/Download-Android_APK_(v1.0.2)-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download Android APK" />
+  <a href="https://github.com/Ranit2op/LabelLens/releases/download/v1.0.3/LabelLens-v1.0.3.apk">
+    <img src="https://img.shields.io/badge/Download-Android_APK_(v1.0.3)-4CAF50?style=for-the-badge&logo=android&logoColor=white" alt="Download Android APK" />
   </a>
-  <a href="https://github.com/Ranit2op/LabelLens/releases/tag/v1.0.2">
-    <img src="https://img.shields.io/badge/Release-v1.0.2-00D2FF?style=for-the-badge" alt="Release v1.0.2" />
+  <a href="https://github.com/Ranit2op/LabelLens/releases/tag/v1.0.3">
+    <img src="https://img.shields.io/badge/Release-v1.0.3-00D2FF?style=for-the-badge" alt="Release v1.0.3" />
   </a>
   <a href="https://expo.dev">
     <img src="https://img.shields.io/badge/React%20Native-Expo%20SDK%2057-black.svg?style=for-the-badge&logo=react" alt="React Native Expo" />
