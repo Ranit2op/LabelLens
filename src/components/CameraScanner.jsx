@@ -1,8 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CameraScanner({ onCaptureText, onClose }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -42,12 +50,11 @@ export default function CameraScanner({ onCaptureText, onClose }) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setIsProcessing(true);
-        // Process the picked image URI
         onCaptureText({
           uri: result.assets[0].uri,
           source: 'gallery',
@@ -78,19 +85,24 @@ export default function CameraScanner({ onCaptureText, onClose }) {
       }
     } catch (err) {
       console.warn('Camera capture error:', err);
-    } finally {
       setIsProcessing(false);
     }
   };
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+
+      {/* 1. Full-screen Camera Preview (Self-closing, fills entire screen) */}
       <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFillObject}
         facing="back"
         enableTorch={torch}
-      >
+      />
+
+      {/* 2. Clean UI Overlay sitting properly on top of the camera */}
+      <SafeAreaView style={styles.uiOverlay} pointerEvents="box-none">
         {/* Top Control Bar */}
         <View style={styles.topBar}>
           <TouchableOpacity style={styles.topBtn} onPress={onClose}>
@@ -102,31 +114,31 @@ export default function CameraScanner({ onCaptureText, onClose }) {
           </TouchableOpacity>
         </View>
 
-        {/* Viewfinder Target Frame */}
-        <View style={styles.viewfinderContainer}>
+        {/* Viewfinder Target Frame (Centered) */}
+        <View style={styles.viewfinderContainer} pointerEvents="none">
           <View style={styles.targetFrame}>
-            {/* Corner Markers */}
             <View style={[styles.corner, styles.cornerTL]} />
             <View style={[styles.corner, styles.cornerTR]} />
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
 
-            {/* Instruction Banner */}
             <View style={styles.hintBadge}>
               <Text style={styles.hintText}>Align Ingredients Table Here</Text>
             </View>
           </View>
         </View>
 
-        {/* Bottom Shutter Controls */}
+        {/* Bottom Shutter Controls (Sitting at bottom) */}
         <View style={styles.bottomBar}>
-          {/* Gallery Picker */}
+          {/* Gallery Picker Button */}
           <TouchableOpacity style={styles.auxBtn} onPress={pickFromGallery}>
-            <Ionicons name="images-outline" size={26} color="#FFF" />
+            <View style={styles.auxIconCircle}>
+              <Ionicons name="images-outline" size={24} color="#FFF" />
+            </View>
             <Text style={styles.auxBtnLabel}>Gallery</Text>
           </TouchableOpacity>
 
-          {/* Shutter Button */}
+          {/* Shutter Button in bottom center */}
           <TouchableOpacity
             style={styles.shutterOuter}
             onPress={takeSnapshot}
@@ -135,17 +147,17 @@ export default function CameraScanner({ onCaptureText, onClose }) {
           >
             <View style={styles.shutterInner}>
               {isProcessing ? (
-                <ActivityIndicator color="#090D16" />
+                <ActivityIndicator color="#090D16" size="small" />
               ) : (
                 <View style={styles.shutterCenter} />
               )}
             </View>
           </TouchableOpacity>
 
-          {/* Dummy alignment */}
-          <View style={styles.auxBtnPlaceholder} />
+          {/* Spacer to keep shutter centered */}
+          <View style={styles.auxBtnSpacer} />
         </View>
-      </CameraView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -154,54 +166,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    width: '100%',
+    height: '100%',
   },
-  centerContainer: {
-    flex: 1,
-    backgroundColor: '#090D16',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  permTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    textAlign: 'center',
-  },
-  permDesc: {
-    fontSize: 14,
-    color: '#94A3B8',
-    textAlign: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  permBtn: {
-    backgroundColor: '#06B6D4',
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-  },
-  permBtnText: {
-    color: '#090D16',
-    fontWeight: '800',
-    fontSize: 15,
-  },
-  cancelBtn: {
-    marginTop: 14,
-    padding: 10,
-  },
-  cancelBtnText: {
-    color: '#64748B',
-    fontSize: 14,
+  uiOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
+    zIndex: 10,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
     paddingHorizontal: 20,
-    zIndex: 10,
+    paddingTop: 12,
   },
   topBtn: {
     width: 44,
@@ -220,11 +198,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: 28,
   },
   targetFrame: {
     width: '100%',
-    height: 240,
+    height: 250,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 16,
@@ -268,8 +246,8 @@ const styles = StyleSheet.create({
   },
   hintBadge: {
     backgroundColor: 'rgba(9, 13, 22, 0.75)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(6, 182, 212, 0.4)',
@@ -283,42 +261,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 50,
     paddingHorizontal: 36,
+    paddingBottom: 32,
   },
   shutterOuter: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
     borderWidth: 4,
     borderColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   shutterInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   shutterCenter: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: '#06B6D4',
   },
   auxBtn: {
     alignItems: 'center',
+    width: 50,
+  },
+  auxIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   auxBtnLabel: {
-    color: '#94A3B8',
+    color: '#CBD5E1',
     fontSize: 11,
     marginTop: 4,
     fontWeight: '600',
   },
-  auxBtnPlaceholder: {
-    width: 44,
+  auxBtnSpacer: {
+    width: 50,
+  },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: '#090D16',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  permTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F1F5F9',
+    textAlign: 'center',
+  },
+  permDesc: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  permBtn: {
+    backgroundColor: '#06B6D4',
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+  },
+  permBtnText: {
+    color: '#090D16',
+    fontWeight: '800',
+    fontSize: 15,
+  },
+  cancelBtn: {
+    marginTop: 14,
+    padding: 10,
+  },
+  cancelBtnText: {
+    color: '#64748B',
+    fontSize: 14,
   },
 });
