@@ -7,7 +7,10 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  NativeModules,
 } from 'react-native';
+
+const { LabelLensOcr } = NativeModules;
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -65,18 +68,38 @@ function MainScreen() {
     }
   };
 
-  // Handle Camera Capture
-  const handleCameraCapture = (captureData) => {
+  // Handle Camera Capture with Live On-Device Google ML Kit OCR
+  const handleCameraCapture = async (captureData) => {
     setIsCameraActive(false);
-    // Real-world OCR simulation / capture handler
-    // In live camera snapshot mode, analyzes label and presents breakdown
-    performAnalysis(
-      'Refined Wheat Flour, Palm Oil, Sugar, Invert Sugar Syrup, Monosodium Glutamate (E621), Tartrazine (E102), Sodium Benzoate (E211), Salt, Soy Lecithin (E322)',
-      'Camera Scanned Label'
-    );
+    if (!captureData || !captureData.uri) return;
+
+    try {
+      if (LabelLensOcr && LabelLensOcr.recognizeText) {
+        const ocrText = await LabelLensOcr.recognizeText(captureData.uri);
+        if (ocrText && ocrText.trim().length > 0) {
+          performAnalysis(ocrText, 'Camera Scanned Label');
+          return;
+        } else {
+          Alert.alert(
+            'No Text Detected',
+            'Camera could not find readable text on the package. Please ensure the label is well lit and in focus.'
+          );
+          return;
+        }
+      } else {
+        // Notice for Expo Go preview environment
+        Alert.alert(
+          'Standalone APK Feature',
+          'Real On-Device Google ML Kit OCR is compiled in your standalone APK. In Expo Go preview, please use "Paste Text" or "Test Sample Foods".'
+        );
+      }
+    } catch (err) {
+      console.warn('OCR error:', err);
+      Alert.alert('OCR Scan Failed', 'Failed to read text from image: ' + (err.message || ''));
+    }
   };
 
-  // Handle Photo Picker from Home
+  // Handle Photo Picker from Home with Live On-Device Google ML Kit OCR
   const handlePickGallery = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,11 +108,22 @@ function MainScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        // Run analysis on picked image
-        performAnalysis(
-          'Whole Milk Powder, Cocoa Butter, Sugar, Maltodextrin, Emulsifiers (E471, E322), Artificial Vanillin Flavor, Sunset Yellow (E110)',
-          'Gallery Scanned Label'
-        );
+        const imageUri = result.assets[0].uri;
+        if (LabelLensOcr && LabelLensOcr.recognizeText) {
+          const ocrText = await LabelLensOcr.recognizeText(imageUri);
+          if (ocrText && ocrText.trim().length > 0) {
+            performAnalysis(ocrText, 'Gallery Scanned Label');
+            return;
+          } else {
+            Alert.alert('No Text Found', 'Could not read any clear text in the selected photo.');
+            return;
+          }
+        } else {
+          Alert.alert(
+            'Standalone APK Feature',
+            'Real On-Device Google ML Kit OCR is compiled in your standalone APK. In Expo Go preview, please use "Paste Text" or "Test Sample Foods".'
+          );
+        }
       }
     } catch (err) {
       console.warn('Image picker error:', err);
