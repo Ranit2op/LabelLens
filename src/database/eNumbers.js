@@ -119,6 +119,17 @@ export const E_NUMBERS = {
     sideEffects: ['Endocrine disruptor', 'Estrogen mimic', 'Stomach irritation'],
     vegan: true,
   },
+  'E319': {
+    code: 'E319',
+    ins: 'INS 319',
+    name: 'TBHQ (Tert-Butylhydroquinone)',
+    category: 'Preservative / Antioxidant',
+    risk: 'danger',
+    description: 'Petroleum-based chemical preservative commonly added to vegetable oils, instant noodles, and chips to prolong shelf life.',
+    sideEffects: ['Cellular vision impairment', 'Enlarged liver and neurotoxicity in high doses', 'Immune system impairment'],
+    bannedIn: ['Japan'],
+    vegan: true,
+  },
   'E320': {
     code: 'E320',
     ins: 'INS 320',

@@ -88,6 +88,29 @@ export default function CameraScanner({ onCaptureText, onClose }) {
     }
   };
 
+  // Launch phone's native camera
+  const openSystemCamera = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setIsProcessing(true);
+        onCaptureText({
+          uri: result.assets[0].uri,
+          source: 'camera',
+        });
+      }
+    } catch (err) {
+      console.warn('System camera error:', err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -95,65 +118,70 @@ export default function CameraScanner({ onCaptureText, onClose }) {
       {/* 1. Full-screen Camera Preview */}
       <CameraView
         ref={cameraRef}
-        style={StyleSheet.absoluteFillObject}
+        style={styles.camera}
         facing="back"
-        enableTorch={torch}
-      />
+        {...(torch ? { enableTorch: true } : {})}
+      >
+        {/* 2. Top Bar (Pinned to Top) */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.iconCircleBtn} onPress={onClose}>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.topTitle}>Scan Label</Text>
+          <TouchableOpacity style={styles.iconCircleBtn} onPress={() => setTorch(!torch)}>
+            <Ionicons name={torch ? 'flash' : 'flash-off'} size={22} color={torch ? '#F59E0B' : '#FFF'} />
+          </TouchableOpacity>
+        </View>
 
-      {/* 2. Top Bar (Pinned to Top) */}
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.iconCircleBtn} onPress={onClose}>
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>Scan Label</Text>
-        <TouchableOpacity style={styles.iconCircleBtn} onPress={() => setTorch(!torch)}>
-          <Ionicons name={torch ? 'flash' : 'flash-off'} size={22} color={torch ? '#F59E0B' : '#FFF'} />
-        </TouchableOpacity>
-      </View>
+        {/* 3. Center Target Viewfinder Frame */}
+        <View style={styles.centerTargetFrame} pointerEvents="none">
+          <View style={styles.frameBox}>
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
 
-      {/* 3. Center Target Viewfinder Frame */}
-      <View style={styles.centerTargetFrame} pointerEvents="none">
-        <View style={styles.frameBox}>
-          <View style={[styles.corner, styles.cornerTL]} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
-
-          <View style={styles.hintBadge}>
-            <Text style={styles.hintText}>প্যাকেটের উপাদানের তালিকা এখানে ধরুন</Text>
+            <View style={styles.hintBadge}>
+              <Text style={styles.hintText}>Align ingredient label within frame</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* 4. Bottom Controls Bar (Strictly Pinned to Bottom) */}
-      <View style={styles.bottomControlsBar}>
-        {/* Gallery Button */}
-        <TouchableOpacity style={styles.auxBtn} onPress={pickFromGallery}>
-          <View style={styles.iconCircleBtn}>
-            <Ionicons name="images-outline" size={24} color="#FFF" />
-          </View>
-          <Text style={styles.auxBtnLabel}>Gallery</Text>
-        </TouchableOpacity>
+        {/* 4. Bottom Controls Bar (Strictly Pinned to Bottom) */}
+        <View style={styles.bottomControlsBar}>
+          {/* Gallery Button */}
+          <TouchableOpacity style={styles.auxBtn} onPress={pickFromGallery}>
+            <View style={styles.iconCircleBtn}>
+              <Ionicons name="images-outline" size={24} color="#FFF" />
+            </View>
+            <Text style={styles.auxBtnLabel}>Gallery</Text>
+          </TouchableOpacity>
 
-        {/* Big Center Shutter Button */}
-        <TouchableOpacity
-          style={styles.shutterOuter}
-          onPress={takeSnapshot}
-          disabled={isProcessing}
-          activeOpacity={0.7}
-        >
-          <View style={styles.shutterInner}>
-            {isProcessing ? (
-              <ActivityIndicator color="#090D16" size="small" />
-            ) : (
-              <View style={styles.shutterCenter} />
-            )}
-          </View>
-        </TouchableOpacity>
+          {/* Big Center Shutter Button */}
+          <TouchableOpacity
+            style={styles.shutterOuter}
+            onPress={takeSnapshot}
+            disabled={isProcessing}
+            activeOpacity={0.7}
+          >
+            <View style={styles.shutterInner}>
+              {isProcessing ? (
+                <ActivityIndicator color="#090D16" size="small" />
+              ) : (
+                <View style={styles.shutterCenter} />
+              )}
+            </View>
+          </TouchableOpacity>
 
-        {/* Balancing Spacer */}
-        <View style={styles.auxBtnSpacer} />
-      </View>
+          {/* Native HD Camera Option */}
+          <TouchableOpacity style={styles.auxBtn} onPress={openSystemCamera}>
+            <View style={styles.iconCircleBtn}>
+              <Ionicons name="camera-reverse-outline" size={24} color="#06B6D4" />
+            </View>
+            <Text style={styles.auxBtnLabel}>HD Cam</Text>
+          </TouchableOpacity>
+        </View>
+      </CameraView>
     </View>
   );
 }
@@ -161,8 +189,14 @@ export default function CameraScanner({ onCaptureText, onClose }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#000',
-    position: 'relative',
+  },
+  camera: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   topBar: {
     position: 'absolute',
@@ -178,17 +212,25 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   topTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: '#FFF',
     letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   centerTargetFrame: {
     position: 'absolute',
@@ -203,8 +245,8 @@ const styles = StyleSheet.create({
   frameBox: {
     width: '100%',
     height: '100%',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -214,7 +256,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 24,
     height: 24,
-    borderColor: '#06B6D4',
+    borderColor: '#0284C7',
   },
   cornerTL: {
     top: -2,
@@ -245,17 +287,22 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 16,
   },
   hintBadge: {
-    backgroundColor: 'rgba(9, 13, 22, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.5)',
+    borderColor: '#0284C7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   hintText: {
-    color: '#06B6D4',
+    color: '#0284C7',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   bottomControlsBar: {
     position: 'absolute',
@@ -270,32 +317,40 @@ const styles = StyleSheet.create({
   },
   auxBtn: {
     alignItems: 'center',
-    width: 54,
+    width: 58,
   },
   auxBtnLabel: {
-    color: '#E2E8F0',
+    color: '#FFFFFF',
     fontSize: 11,
     marginTop: 6,
-    fontWeight: '700',
+    fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   auxBtnSpacer: {
-    width: 54,
+    width: 58,
   },
   shutterOuter: {
     width: 84,
     height: 84,
     borderRadius: 42,
     borderWidth: 4,
-    borderColor: '#FFF',
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   shutterInner: {
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -303,11 +358,11 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#0284C7',
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -315,25 +370,25 @@ const styles = StyleSheet.create({
   permTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#F1F5F9',
+    color: '#0F172A',
     textAlign: 'center',
   },
   permDesc: {
     fontSize: 14,
-    color: '#94A3B8',
+    color: '#64748B',
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 24,
     lineHeight: 20,
   },
   permBtn: {
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#0284C7',
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 12,
   },
   permBtnText: {
-    color: '#090D16',
+    color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 15,
   },
@@ -342,7 +397,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   cancelBtnText: {
-    color: '#64748B',
+    color: '#94A3B8',
     fontSize: 14,
   },
 });

@@ -22,19 +22,19 @@ export default function ScanReportView({ analysis, onRescan }) {
         </View>
       </View>
 
-      {/* 2. Harmful / Bad Ingredients (খারাপ উপাদান) */}
+      {/* 2. Harmful / Bad Ingredients */}
       <View style={styles.sectionHeaderRow}>
         <Ionicons name="alert-circle" size={20} color="#EF4444" />
         <Text style={styles.sectionTitle}>
-          খারাপ / ক্ষতিকর উপাদান ({badIngredients.length})
+          Harmful / Bad Ingredients ({badIngredients.length})
         </Text>
       </View>
 
       {badIngredients.length === 0 ? (
         <View style={styles.emptyGoodBox}>
           <Ionicons name="checkmark-circle" size={28} color="#10B981" />
-          <Text style={styles.emptyGoodTitle}>কোনো ক্ষতিকর কেমিক্যাল পাওয়া যায়নি!</Text>
-          <Text style={styles.emptyGoodDesc}>এই প্যাকেটে ক্ষতিকর কোনো E-numbers বা লুকানো চিনি পাওয়া যায়নি।</Text>
+          <Text style={styles.emptyGoodTitle}>No Harmful Ingredients Detected!</Text>
+          <Text style={styles.emptyGoodDesc}>No toxic E-numbers, hazardous additives, or disguised sugars were found.</Text>
         </View>
       ) : (
         badIngredients.map((item, idx) => (
@@ -68,17 +68,17 @@ export default function ScanReportView({ analysis, onRescan }) {
         ))
       )}
 
-      {/* 3. Good / Safe Ingredients (ভালো ও নিরাপদ উপাদান) */}
+      {/* 3. Good / Safe Ingredients */}
       <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
         <Ionicons name="shield-checkmark" size={20} color="#10B981" />
         <Text style={styles.sectionTitle}>
-          ভালো / নিরাপদ উপাদান ({goodIngredients.length})
+          Good / Safe Ingredients ({goodIngredients.length})
         </Text>
       </View>
 
       {goodIngredients.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyDesc}>কোনো স্পষ্ট পুষ্টিকর উপাদান পাওয়া যায়নি।</Text>
+          <Text style={styles.emptyDesc}>No standout wholesome ingredients identified.</Text>
         </View>
       ) : (
         goodIngredients.map((item, idx) => (
@@ -97,7 +97,7 @@ export default function ScanReportView({ analysis, onRescan }) {
       {/* 4. Large Action Button to Rescan */}
       <TouchableOpacity style={styles.rescanBtn} activeOpacity={0.8} onPress={onRescan}>
         <Ionicons name="scan-outline" size={22} color="#090D16" />
-        <Text style={styles.rescanBtnText}>আরেকটি প্রোডাক্ট স্ক্যান করুন</Text>
+        <Text style={styles.rescanBtnText}>Scan Another Product</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -106,21 +106,27 @@ export default function ScanReportView({ analysis, onRescan }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#090D16',
+    backgroundColor: '#F8FAFC',
   },
   content: {
     padding: 16,
     paddingBottom: 40,
   },
   verdictCard: {
-    backgroundColor: '#111726',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
     borderWidth: 1,
+    borderColor: '#E2E8F0',
     marginBottom: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   scoreCircle: {
     width: 74,
@@ -149,9 +155,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   summaryText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 17,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -160,18 +166,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#F1F5F9',
+    color: '#0F172A',
   },
   itemCard: {
-    backgroundColor: '#111726',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
     padding: 14,
     borderLeftWidth: 4,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#E2E8F0',
     marginBottom: 10,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 6,
+    elevation: 1,
   },
   itemHeader: {
     flexDirection: 'row',
@@ -182,13 +193,13 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#F1F5F9',
+    color: '#0F172A',
     flex: 1,
     marginRight: 8,
   },
   badgePill: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 6,
   },
   badgeText: {
@@ -196,54 +207,59 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   itemReason: {
-    fontSize: 12,
-    color: '#CBD5E1',
-    lineHeight: 17,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18,
   },
   emptyGoodBox: {
-    backgroundColor: '#111726',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    padding: 18,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#10B98140',
+    borderColor: '#BBF7D0',
   },
   emptyGoodTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#10B981',
+    color: '#16A34A',
     marginTop: 6,
   },
   emptyGoodDesc: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
-    marginTop: 2,
+    marginTop: 4,
     textAlign: 'center',
   },
   emptyBox: {
-    backgroundColor: '#111726',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: '#E2E8F0',
   },
   emptyDesc: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
   },
   rescanBtn: {
     flexDirection: 'row',
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#0284C7',
     paddingVertical: 15,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 28,
     gap: 8,
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
   },
   rescanBtnText: {
-    color: '#090D16',
+    color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 15,
   },
