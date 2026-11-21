@@ -170,8 +170,13 @@ export default function App() {
           <View style={styles.logoBadge}>
             <Ionicons name="scan" size={22} color="#06B6D4" />
           </View>
-          <View>
-            <Text style={styles.brandTitle}>LabelLens</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={styles.brandTitle}>LabelLens</Text>
+              <View style={styles.versionBadge}>
+                <Text style={styles.versionBadgeText}>v1.0.1</Text>
+              </View>
+            </View>
             <Text style={styles.brandSubtitle}>খাবারের ভালো ও ক্ষতিকর উপাদান স্ক্যানার</Text>
           </View>
         </View>
@@ -284,6 +289,19 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#F1F5F9',
     letterSpacing: 0.5,
+  },
+  versionBadge: {
+    backgroundColor: '#06B6D420',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#06B6D450',
+  },
+  versionBadgeText: {
+    color: '#06B6D4',
+    fontSize: 11,
+    fontWeight: '800',
   },
   brandSubtitle: {
     fontSize: 12,
